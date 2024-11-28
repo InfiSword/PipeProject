@@ -28,6 +28,7 @@ public class MainGame : UI_Scene
 
     enum MainGameButton
     {
+        Exit,
         Home,
         LevelSelect,
         ReStart,
@@ -86,10 +87,12 @@ public class MainGame : UI_Scene
 
         GetButton((int)MainGameButton.Home).BindEvent((PointerEventData data) =>
         {
+            Managers.Pipe.UnlockLevel();
             Managers.Scene.LoadScene(Define.Scene.MainMenu);
         }, Define.UIEvent.Click);
         GetButton((int)MainGameButton.LevelSelect).BindEvent((PointerEventData data) =>
         {
+            Managers.Pipe.UnlockLevel();
             MainScene.isSelectMenu = true;
             MainScene.menu_Name = "Level_Menu";
             Managers.Scene.LoadScene(Define.Scene.MainMenu);            
@@ -100,9 +103,18 @@ public class MainGame : UI_Scene
         }, Define.UIEvent.Click);
         GetButton((int)MainGameButton.NextLevel).BindEvent((PointerEventData data) =>
         {
-            Managers.Pipe.currentLevel = currentLevel + 1;
+            Managers.Pipe.UnlockLevel();
             Managers.Pipe.now_Level = Managers.Pipe.GetLevel();
             Managers.Scene.LoadScene(Define.Scene.Game);
+        }, Define.UIEvent.Click);
+        GetButton((int)MainGameButton.Exit).BindEvent((PointerEventData data) =>
+        {
+            if (!isGameFinished)
+            {
+                MainScene.isSelectMenu = true;
+                MainScene.menu_Name = "Level_Menu";
+                Managers.Scene.LoadScene(Define.Scene.MainMenu);
+            }
         }, Define.UIEvent.Click);
 
         info_Title = GetImage((int)MainGameImage.Info_Title);
@@ -391,17 +403,7 @@ public class MainGame : UI_Scene
     }
 
     private void EndedEvent_PipeNode()
-    {
-        //if (nowNode.IsStartNode && nowNode.connectedNodeList.Count == 1)
-        //{
-        //    Node node = nowNode.connectedNodeList[0];
-        //    while (!node.IsEndNode)
-        //    {
-        //        node.SolveHighlight();
-        //        node = node.connectedNodeList[0];
-        //    }
-        //}
-        // 스택이 비어있지 않은지 확인하고 End 노드인지 검사
+    {        
         if (connectingNode.Count != 0 && !connectingNode.Peek().IsEndNode)
         {
             foreach (var node in connectingNode)
@@ -463,14 +465,12 @@ public class MainGame : UI_Scene
 
         if (connectingCount >= currentLevelData.so_Edges.Count)
         {
-            Managers.Pipe.UnlockLevel();
             //Managers.Sound.PlayBgm(Define.BGM.Count, true);
             Managers.Sound.PlaySFX(Define.SFX.Success, -1);
             //Managers.Sound.StopSfx(Define.SFX.Success);
 
             completeImage.gameObject.SetActive(true);
             winText.gameObject.SetActive(true);
-
             clickHighLight.gameObject.SetActive(false);
 
             --Managers.ads_Count;

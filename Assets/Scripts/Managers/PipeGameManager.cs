@@ -40,17 +40,11 @@ public class PipeGameManager : MonoBehaviour
         hard_Level = Resources.LoadAll<LevelData>("ScriptableObj/Levels/Hard");
         all_LevelDicts = new Dictionary<string, LevelData>();
 
-        foreach (var item in easy_Level)
+        for(int i=0; i<maxLevel; i++)
         {
-            all_LevelDicts[item.so_LevelName] = item;
-        }
-        foreach(var item in normal_Level)
-        {
-            all_LevelDicts[item.so_LevelName] = item;
-        }
-        foreach(var item in hard_Level)
-        {
-            all_LevelDicts[item.so_LevelName] = item;
+            all_LevelDicts[easy_Level[i].so_LevelName] = easy_Level[i];
+            all_LevelDicts[normal_Level[i].so_LevelName] = normal_Level[i];
+            //all_LevelDicts[hard_Level[i].so_LevelName] = hard_Level[i];
         }
       
         difficulty_ColorLibrary = Managers.Resource.Load<ColorLibrary>("ScriptableObj/Difficulty_Colors");

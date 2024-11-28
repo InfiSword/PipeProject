@@ -18,7 +18,7 @@ public class MainMenu : UI_Scene
         Bind<Button>(typeof(MenuButtons));
         GetButton((int)MenuButtons.Start).BindEvent((PointerEventData data) =>
         {
-            Managers.UI.ShowPopupUI<DifficultyMenu>().GetMainMenuUI(this);
+            Managers.UI.ShowPopupUI<DifficultyMenu>();
             gameObject.SetActive(false);
         }, Define.UIEvent.Click);
 

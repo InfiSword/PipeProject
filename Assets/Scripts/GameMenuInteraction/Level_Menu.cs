@@ -66,7 +66,7 @@ public class Level_Menu : UI_Popup
                 levelBtn.levelColor = difficulty_Color;
                 levelBtn.level_Menu = this;
                 levelBtn.levelText.text = $"{i + 1}";
-                levelBtn.gameObject.name = $"Level_{i + 1}";               
+                levelBtn.gameObject.name = $"{difficulty} Level_{i + 1}";               
 
                 levelBtn.Init();
                 levelButtonList.Add(levelBtn);

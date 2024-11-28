@@ -35,6 +35,7 @@ public class DifficultyMenu : UI_Popup
         Bind<GameObject>(typeof(DifficultyMenuObj));
         GetButton((int)DifficultyMenuButtons.MainMenuButton).BindEvent((PointerEventData data) =>
         {
+            mainMenu = FindObjectOfType<MainMenu>();
             mainMenu.gameObject.SetActive(true);
             ClosePopupUI();
         }, Define.UIEvent.Click);
@@ -67,11 +68,6 @@ public class DifficultyMenu : UI_Popup
             Managers.Pipe.stageButtonList[i].transform.localScale = Vector3.one;
         }
 
-    }
-
-    public void GetMainMenuUI(MainMenu _mainMenu)
-    {
-        mainMenu = _mainMenu;       
     }
 
     public override void ClosePopupUI()
