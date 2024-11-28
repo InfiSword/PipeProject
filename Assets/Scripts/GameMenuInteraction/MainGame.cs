@@ -95,14 +95,13 @@ public class MainGame : UI_Scene
             Managers.Scene.LoadScene(Define.Scene.MainMenu);            
         }, Define.UIEvent.Click);
         GetButton((int)MainGameButton.ReStart).BindEvent((PointerEventData data) =>
-        {
-            Managers.Pipe.currentLevel = currentLevel + 1;
-            Managers.Pipe.now_Level = Managers.Pipe.GetLevel();
+        {           
             Managers.Scene.LoadScene(Define.Scene.Game);
         }, Define.UIEvent.Click);
         GetButton((int)MainGameButton.NextLevel).BindEvent((PointerEventData data) =>
         {
-            
+            Managers.Pipe.currentLevel = currentLevel + 1;
+            Managers.Pipe.now_Level = Managers.Pipe.GetLevel();
             Managers.Scene.LoadScene(Define.Scene.Game);
         }, Define.UIEvent.Click);
 
