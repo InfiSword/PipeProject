@@ -21,10 +21,11 @@ public class RotateNode : MonoBehaviour
     public int currentRotation;
     public int colorId;
 
-    public void Init(bool isBend)
+    public void Init(bool _isBend)
     {
         mainGame = FindObjectOfType<MainGame>();
-        if (isBend)
+        currentRotation = 0;
+        if (_isBend)
         {
             normalRotateNode.SetActive(false);
             bendRotateNode.SetActive(true);
@@ -51,31 +52,47 @@ public class RotateNode : MonoBehaviour
 
     // 이어나갈 방향을 정해주는 함수 
     // 이어나갈 방향을 추가로 지정해서 만들어줘야 함
-    public void IsCorrectDirection(Vector2Int offset)
+    public void SetCorrectDirection()
     {
-        switch (currentRotation)
+        if (!isBend)
         {
-            case 0:
-                vec_1 = new Vector2Int(0, -1);  // left
-                vec_2 = new Vector2Int(1, 0);   // bottom
-                break;
-            case 90:
-                break;
-            case 180:
-                break; // offset == Vector2Int.up || offset == Vector2Int.down;
-            case 270:
-                //return offset == Vector2Int.left || offset == Vector2Int.right;
-                break;
-            default:
-                break;
+            switch (currentRotation)
+            {
+                case 270:
+                case 0:
+                    vec_1 = new Vector2Int(-1, 0);      // up방향
+                    vec_2 = new Vector2Int(1, 0);       // down방향            
+                    break;
+                case 90:
+                case 180:
+                    vec_1 = new Vector2Int(0, -1);      // left방향 
+                    vec_2 = new Vector2Int(0, 1);       // right방향
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            switch (currentRotation)
+            {
+                case 270:
+                case 0:
+                    vec_1 = new Vector2Int(0, -1);      // left방향
+                    vec_2 = new Vector2Int(1, 0);       // down방향            
+                    break;
+                case 90:
+                case 180:
+                    vec_1 = new Vector2Int(0, 1);      // right방향 
+                    vec_2 = new Vector2Int(-1, 0);       // up방향
+                    break;
+                default:
+                    break;
+            }
         }
     }
-
-    public void CorrectBendOrNormal()
-    {
-
-    }
-
+    
+    // 색깔과 목표지점 세팅( 꺾은 파이프를 해당 파이프 색깔 지점을 지정해줌 )
     public void SetColorAndPoint(int _colorId)
     {
         colorId = _colorId;

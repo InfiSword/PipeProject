@@ -35,7 +35,7 @@ public class DifficultyMenu : UI_Popup
         Bind<GameObject>(typeof(DifficultyMenuObj));
         GetButton((int)DifficultyMenuButtons.MainMenuButton).BindEvent((PointerEventData data) =>
         {
-            mainMenu = FindObjectOfType<MainMenu>();
+            mainMenu = FindObjectOfType<MainMenu>(true);
             mainMenu.gameObject.SetActive(true);
             ClosePopupUI();
         }, Define.UIEvent.Click);
