@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Node : MonoBehaviour
+public class Node : BaseNode
 {
     public GameObject BG;
     public GameObject startpoint;
@@ -16,8 +16,9 @@ public class Node : MonoBehaviour
 
     private MainGame mainGame;
     private Dictionary<Node, GameObject> connectedEdges;
+    public Dictionary<Vector2Int, GameObject> vectorEdges { get; private set; }
     public List<Node> connectedNodeList;
-    public Vector2Int Pos2D;
+    public Vector2Int rotateConnectingVector;
     public int colorId;
 
     public bool IsWin       // 연결되어 있는가?
@@ -37,7 +38,7 @@ public class Node : MonoBehaviour
     {
         get
         {
-            if (IsStartNode)        // 스타트 노드라면
+            if (IsStartNode || isConnecting_RotateNode)        // 스타트 노드라면
             {
                 return true;
             }
@@ -50,7 +51,7 @@ public class Node : MonoBehaviour
             // 만약 끝 노드라면 false 처리
             else if (IsEndNode)
                 return false;
-            
+
             // 나머지 연결되어 있는 노드의 수가 1~2개일 때 true처리
             return connectedNodeList.Count > 0;
         }
@@ -59,13 +60,15 @@ public class Node : MonoBehaviour
     // 연결이 성공된 파이프인가.
     public bool isConnectingComplete = false;
 
+    public bool isConnecting_RotateNode = false;
+
     // 스타트 노드인가?
     public bool IsStartNode => startpoint.activeSelf;
     // 끝 노드인가?
     public bool IsEndNode => endPoint.activeSelf;
 
     // 초기화 작업
-    public void Init()
+    public override void Init()
     {
         startpoint.SetActive(false);
         endPoint.SetActive(false);
@@ -78,6 +81,7 @@ public class Node : MonoBehaviour
         // 메인게임 추적
         mainGame = FindObjectOfType<MainGame>();
         // 리스트, 딕셔너리 생성
+        vectorEdges = new Dictionary<Vector2Int, GameObject>();
         connectedEdges = new Dictionary<Node, GameObject>();
         connectedNodeList = new List<Node>();
     }
@@ -104,7 +108,7 @@ public class Node : MonoBehaviour
 
     // 모서리 부분 세팅
     public void SetEdge(Vector2Int offset, Node node)
-    {        
+    {
         if (offset == new Vector2Int(-1, 0))
         {
             connectedEdges[node] = topEdge;
@@ -127,6 +131,30 @@ public class Node : MonoBehaviour
         }
     }
 
+    public void SetEdge(Vector2Int offset)
+    {
+        if (offset == new Vector2Int(1, 0))
+        {
+            vectorEdges[offset] = topEdge;
+            return;
+        }
+        else if (offset == new Vector2Int(-1, 0))
+        {
+            vectorEdges[offset] = bottomEdge;
+            return;
+        }
+        else if (offset == new Vector2Int(0, -1))
+        {
+            vectorEdges[offset] = rightEdge;
+            return;
+        }
+        else if (offset == new Vector2Int(0, 1))
+        {
+            vectorEdges[offset] = leftEdge;
+            return;
+        }
+    }
+
     public void UpdateInput(Node connectedNode)
     {
         // 에지 목록에 없는 노드는 포함도 시키지 않음
@@ -139,7 +167,7 @@ public class Node : MonoBehaviour
         // 해당 파트의 노드를 삭제시킴
         if (connectedNodeList.Contains(connectedNode))
         {
-            Debug.Log("이미 연결된 노드입니다.");    
+            Debug.Log("이미 연결된 노드입니다.");
             RemoveEdge(connectedNode);
             DeleteNode();
             connectedNode.DeleteNode();
@@ -204,7 +232,7 @@ public class Node : MonoBehaviour
             tempNode.DeleteNode();
         }
 
-        if(connectedNode.IsStartNode)
+        if (connectedNode.IsStartNode)
         {
             Debug.Log($"IsConnecting{this.gameObject.name} is StartNode");
             DeleteNode();
@@ -213,15 +241,15 @@ public class Node : MonoBehaviour
 
         // 내가 연결하고자 하는 노드가 시작노드면서, 이미 하나 연결되어 있다면?
         if (connectedNodeList.Count == 1 && IsStartNode)
-        {     
+        {
             if (mainGame.connectingCount > 0)
                 mainGame.connectingCount--;
-            
+
             Node tempNode = connectedNodeList[0];
             connectedNodeList.Remove(tempNode);
             tempNode.connectedNodeList.Remove(this);
             RemoveEdge(tempNode);
-            tempNode.DeleteNode();           
+            tempNode.DeleteNode();
         }
 
         //연결된 노드가, 끝 노드고, 연결된 갯수가 1개일 때
@@ -238,6 +266,19 @@ public class Node : MonoBehaviour
         }
         AddEdge(connectedNode);
     }
+
+    public void UpdateInput_RotateNode()
+    {
+
+    }
+
+    public void UpdateRotateNode(Vector2Int vec, Node connectingNode)
+    {        
+        rotateConnectingVector = vec;
+        isConnecting_RotateNode = true;
+        AddEdge(connectingNode, rotateConnectingVector);
+    }
+
     private void AddEdge(Node connectedNode)
     {
         connectedNode.colorId = colorId;
@@ -250,31 +291,68 @@ public class Node : MonoBehaviour
         connectedEdge.GetComponent<Image>().color = mainGame.nodeColorList[colorId % mainGame.nodeColorList.Count];
         connectedEdge2.GetComponent<Image>().color = mainGame.nodeColorList[colorId % mainGame.nodeColorList.Count];
     }
-
-    public void RemoveEdge(Node node)
+    private void AddEdge(Node connectingNode, Vector2Int vec)
     {
-        GameObject edge = connectedEdges[node];        
-        edge.SetActive(false);        
-        edge = node.connectedEdges[this];
-        edge.SetActive(false);
+        if (connectingNode != null)
+        {
+            connectingNode.colorId = colorId;
+            connectingNode.connectedNodeList.Add(this);
+            connectedNodeList.Add(connectingNode);
+        }
+        GameObject connectedEdge = vectorEdges[vec];
+        connectedEdge.SetActive(true);
+        connectedEdge.GetComponent<Image>().color = mainGame.nodeColorList[colorId % mainGame.nodeColorList.Count];
+
+    }
+
+    public void RemoveEdge(Node node, bool isRemoveRotate = false)
+    {
+        if (isRemoveRotate)
+        {
+            isConnecting_RotateNode = false;
+            GameObject connect = vectorEdges[rotateConnectingVector];
+            connect.SetActive(false);
+            if (node.isConnecting_RotateNode)
+            {
+                connect = node.vectorEdges[node.rotateConnectingVector];
+                connect.SetActive(false);
+            }
+            else
+            {
+                GameObject edge = connectedEdges[node];
+                edge.SetActive(false);
+                edge = node.connectedEdges[this];
+                edge.SetActive(false);
+            }
+        }
+        else
+        {
+            GameObject edge = connectedEdges[node];
+            edge.SetActive(false);
+            edge = node.connectedEdges[this];
+            edge.SetActive(false);
+        }
     }
 
     public void DeleteNode()
     {
-        Node startNode  = this;
+        Node startNode = this;
 
         while (startNode != null)
         {
             startNode.isConnectingComplete = false;
-            startNode.highLight.SetActive(false);
+            startNode.highLight.SetActive(false);           
 
             Node tempNode = null;
             if (startNode.connectedNodeList.Count != 0)
             {
-                tempNode = startNode.connectedNodeList[0];  
+                tempNode = startNode.connectedNodeList[0];
                 tempNode.connectedNodeList.Remove(startNode);
 
-                startNode.RemoveEdge(tempNode);
+                if (startNode.isConnecting_RotateNode)
+                    startNode.RemoveEdge(tempNode, true);
+                else
+                    startNode.RemoveEdge(tempNode);
                 startNode.connectedNodeList.Clear();
             }
             startNode = tempNode;

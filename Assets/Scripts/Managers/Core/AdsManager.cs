@@ -32,8 +32,8 @@ public class AdsManager
         }
         else
         {
-            _bannerID = "ca-app-pub-2697715692240086/4783832123";
-            _interstitialID = "ca-app-pub-2697715692240086/6587868380";
+            _bannerID = "ca-app-pub-2697715692240086/8019836729";
+            _interstitialID = "ca-app-pub-2697715692240086/8654432989";
             //_rewardID = "ca-app-pub-2697715692240086~8935803587";
         }
 
