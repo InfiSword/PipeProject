@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class AdsManager
 {
-    bool isTest = true;
+    bool isTest = false;
 
     string _bannerID = string.Empty; // ¹è³Ê ±¤°í
     string _interstitialID = string.Empty; // Àü¸é ±¤°í

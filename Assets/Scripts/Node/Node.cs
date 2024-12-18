@@ -87,7 +87,7 @@ public class Node : BaseNode
         connectedEdges = new Dictionary<Node, GameObject>();
         connectedNodeList = new List<Node>();
 
-        rotateConnectingVector = new Vector2Int(-1, -1);
+        rotateConnectingVector = new Vector2Int(-1, -1);  
     }
 
     // 색깔에 맞는 엔드포인트를 지정
@@ -105,7 +105,7 @@ public class Node : BaseNode
                 endPoint.GetComponent<Image>().color = mainGame.nodeColorList[colorId % mainGame.nodeColorList.Count];
                 break;
             case -1:
-                Debug.Log("NotPoint");
+                Debug.Log("NotPipe");
                 break;
         }
     }
@@ -278,6 +278,33 @@ public class Node : BaseNode
 
     public void UpdateRotateNode(RotateNode _rotate, Vector2Int vec, Node connectingNode)
     {
+        //자기 자신의 노드가 2개이상 연결되버렸다면?
+        if (connectedNodeList.Count == 2)
+        {
+            Debug.Log("2개가 이미 연결되어 있음");
+            if (mainGame.connectingCount > 0)
+                mainGame.connectingCount--;
+
+            Node tempNode = connectedNodeList[0];
+
+            if (!tempNode.IsConnectedToEndNode())   // 끝 노드와 연결되어 있지 않다면
+            {
+                //connectedNodeList.Remove(tempNode);    // tempNode를 삭제
+                //tempNode.connectedNodeList.Remove(this);
+                RemoveEdge(tempNode);
+                tempNode.DeleteNode();
+                DeleteNode();
+            }
+            else
+            {
+                tempNode = connectedNodeList[1];
+                //connectedNodeList.Remove(tempNode);
+                //tempNode.connectedNodeList.Remove(this);
+                RemoveEdge(tempNode);
+                tempNode.DeleteNode();
+                DeleteNode();
+            }
+        }    
         connectingRotateNode = _rotate;
         //Debug.Log("connectingRotate: " + connectingRotateNode.gameObject.name);
         rotateConnectingVector = vec;
@@ -301,6 +328,7 @@ public class Node : BaseNode
     {
         if (connectingNode != null)
         {
+            colorId = connectingNode.colorId;
             connectingNode.colorId = colorId;
             connectingNode.connectedNodeList.Add(this);
             connectedNodeList.Add(connectingNode);
@@ -343,8 +371,12 @@ public class Node : BaseNode
         {
             startNode.isConnectingComplete = false;
             startNode.highLight.SetActive(false);
-            mainGame.Reset_RotateNode_MainGame(startNode);
+            mainGame.Reset_RotateNode_MainGame(startNode);           
 
+            if (!startNode.IsStartNode && !startNode.IsEndNode)
+            {
+                startNode.colorId = -1;
+            }
             Node tempNode = null;
             if (startNode.connectedNodeList.Count != 0)
             {
@@ -356,6 +388,7 @@ public class Node : BaseNode
                 else
                     startNode.RemoveEdge(tempNode);
                 startNode.connectedNodeList.Clear();
+                startNode.connectingRotateNode = null;
             }
             startNode = tempNode;
         }

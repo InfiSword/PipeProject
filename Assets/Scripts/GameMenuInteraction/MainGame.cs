@@ -55,7 +55,7 @@ public class MainGame : UI_Scene
     public List<Color> nodeColorList = new List<Color>();
     public Image info_Title;
     public Dictionary<Vector2Int, bool> rotateEdgePointsDic = new Dictionary<Vector2Int, bool>();   // 회전가능한 포인트 세팅 
-    public Dictionary<int, int> connecting_RotateNodeDic = new Dictionary<int, int>();    // 색깔 id별로 회전하는 파이프가 존재하는지 카운트로 체크
+    public Dictionary<int, int> connecting_RotateNodeDic = new Dictionary<int, int>();    // 색깔 id별로 회전하는 파이프가 존재하는지 카운트로 체크    
 
     private RotateNode nowRotateNode;
 
@@ -214,10 +214,8 @@ public class MainGame : UI_Scene
 
                 int isStartNode = NodeType(i, j);
                 int colorSpawnNode = NodeColor(i, j);
-                if (colorSpawnNode != -1)
-                {
-                    spawnNode.SetColorAndPoint(colorSpawnNode, isStartNode);
-                }
+                spawnNode.SetColorAndPoint(colorSpawnNode, isStartNode);
+
 
                 nodeGrid.Add(new Vector2Int(i, j), spawnNode);
                 spawnNode.gameObject.name = i.ToString() + j.ToString();
@@ -425,7 +423,7 @@ public class MainGame : UI_Scene
         }
         // 회전하는 파이프 체크
         else if (nowHit.collider != null && nowHit.collider.TryGetComponent(out RotateNode _rotateNode)
-            && nowNode.colorId == _rotateNode.colorId)
+            && nowNode.colorId == _rotateNode.colorId && nowRotateNode == null)
         {
             nowRotateNode = _rotateNode;
             connecting_RotateNodeDic[nowNode.colorId]--;
@@ -473,7 +471,6 @@ public class MainGame : UI_Scene
         currentPos = nowNode.Pos2D;
         targetPos = _tempNode.Pos2D;
         difference = targetPos - currentPos;
-
         //Debug.Log(currentPos);
         //Debug.Log(targetPos);
         //Debug.Log(difference);       
@@ -493,7 +490,7 @@ public class MainGame : UI_Scene
         }
 
         // 회전파이프를 연결햇는지 안했는지
-        if (connecting_RotateNodeDic.ContainsKey(_tempNode.colorId) && connecting_RotateNodeDic[_tempNode.colorId] == 0 && _tempNode.IsEndNode)
+        if (connecting_RotateNodeDic.ContainsKey(_tempNode.colorId) && connecting_RotateNodeDic[_tempNode.colorId] != 0 && _tempNode.IsEndNode)
         {
             return;
         }
@@ -546,6 +543,7 @@ public class MainGame : UI_Scene
                     node.highLight.SetActive(false);
                 }
             }
+            connecting_RotateNodeDic[connectingNode.Peek().colorId] = currentLevelData.so_Edges[connectingNode.Peek().colorId].sm_RotateEdgePoints.Count;
         }
 
         // 스택과 하이라이트 초기화
@@ -560,8 +558,6 @@ public class MainGame : UI_Scene
         connectingCount = 0;
 
         bool IsConnectWinning = true;
-
-        Node firstNode = nodeList[0];
         foreach (var item in nodeList)
         {
             if (item.IsEndNode && item.IsWin)
@@ -588,6 +584,7 @@ public class MainGame : UI_Scene
                 _item.isConnectingComplete = true;
             }
         }
+        connecting_RotateNodeDic[connectingNode.Peek().colorId] = currentLevelData.so_Edges[connectingNode.Peek().colorId].sm_RotateEdgePoints.Count;
         connectingNode.Clear();
         isCheckingWining = false;
 
@@ -597,6 +594,7 @@ public class MainGame : UI_Scene
             Managers.Sound.PlaySFX(Define.SFX.Success, -1);
             //Managers.Sound.StopSfx(Define.SFX.Success);
 
+            connecting_RotateNodeDic.Clear();
             completeImage.gameObject.SetActive(true);
             winText.gameObject.SetActive(true);
             clickHighLight.gameObject.SetActive(false);
