@@ -87,11 +87,17 @@ public class PipeGameManager : MonoBehaviour
     public void UnlockLevel()
     {
         currentLevel++;
-        if (currentLevel < maxLevel + 1)
+        if (!(currentLevel < maxLevel + 1))
         {
             string levelName = "Level" + currentStage.ToString() + currentLevel.ToString();
             PlayerPrefs.SetInt(levelName, 1);
-        }             
+        }
+        else
+        {
+            string levelName = "Level" + currentStage.ToString() + currentLevel.ToString();
+            PlayerPrefs.SetInt(levelName, 0);
+        }
+            
     }
 
     public void ResetAllLevels()

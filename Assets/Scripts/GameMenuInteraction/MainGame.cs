@@ -54,7 +54,8 @@ public class MainGame : UI_Scene
 
     public List<Color> nodeColorList = new List<Color>();
     public Image info_Title;
-    public Dictionary<Vector2Int, bool> rotateEdgePointsDic = new Dictionary<Vector2Int, bool>();   // 회전가능한 포인트 세팅
+    public Dictionary<Vector2Int, bool> rotateEdgePointsDic = new Dictionary<Vector2Int, bool>();   // 회전가능한 포인트 세팅 
+    public Dictionary<int, int> connecting_RotateNodeDic = new Dictionary<int, int>();    // 색깔 id별로 회전하는 파이프가 존재하는지 카운트로 체크
 
     private RotateNode nowRotateNode;
 
@@ -105,7 +106,14 @@ public class MainGame : UI_Scene
         {
             Managers.Pipe.UnlockLevel();
             Managers.Pipe.now_Level = Managers.Pipe.GetLevel();
-            Managers.Scene.LoadScene(Define.Scene.Game);
+            if (Managers.Pipe.now_Level == null)
+            {
+                MainScene.isSelectMenu = true;
+                MainScene.menu_Name = "Level_Menu";
+                Managers.Scene.LoadScene(Define.Scene.MainMenu);
+            }
+            else
+                Managers.Scene.LoadScene(Define.Scene.Game);
         }, Define.UIEvent.Click);
         GetButton((int)MainGameButton.Exit).BindEvent((PointerEventData data) =>
         {
@@ -126,12 +134,13 @@ public class MainGame : UI_Scene
                 rotateEdgePointsDic.Add(item.sm_RotateEdgePoints[i], item.sm_RotateEdgeisBend[i]);
             }
         }
-
         completeImage.gameObject.SetActive(false);
         winText.gameObject.SetActive(false);
 
         mainGamePanel = GetObject((int)MainGameObj.MainGamePanel);
         boardGridLayoutGroup = mainGamePanel.GetComponent<GridLayoutGroup>();
+        nodeColorList.Clear();
+        connecting_RotateNodeDic.Clear();
 
         SetBoard();
         isInit = true;
@@ -195,6 +204,7 @@ public class MainGame : UI_Scene
 
                     int colorSpawnRotateNode = RotateNodeColor(i, j);
                     rotateNode.SetColorAndPoint(colorSpawnRotateNode);
+                    connecting_RotateNodeDic[colorSpawnRotateNode]++;
                     continue;
                 }
 
@@ -235,11 +245,8 @@ public class MainGame : UI_Scene
             foreach (var offset in offsetPos)
             {
                 var checkNode = nodeGrid[item.Pos2D + offset];      // 해당 회전가능한 파이프에서 각각 회전 성분을 더해주고, 해당 좌표의 노드를 찾아옴
-                if (item.vec_1 == offset || item.vec_2 == offset)
-                {
-                    checkNode.SetEdge(offset);
-                    item.SetEdge(offset, checkNode); // 각각 좌,우,위,아래 방향에 맞는 Node를 설정
-                }
+                checkNode.SetEdge(offset);
+                item.SetEdge(offset, checkNode); // 각각 좌,우,위,아래 방향에 맞는 Node를 설정
             }
         }
 
@@ -326,13 +333,16 @@ public class MainGame : UI_Scene
             for (int k = 0; k < edges[colorId].sm_RotateEdgePoints.Count; k++)
             {
                 if (edges[colorId].sm_RotateEdgePoints[k] == point)
+                {
+                    if (!connecting_RotateNodeDic.ContainsKey(colorId))
+                        connecting_RotateNodeDic[colorId] = 0;
                     return colorId;
+                }
             }
         }
 
         return -1;
     }
-
 
     private Node nowNode;
 
@@ -347,6 +357,7 @@ public class MainGame : UI_Scene
             {
                 case TouchPhase.Began:
                     nowNode = null;
+                    RotationEvent_PipeNode(touch);
                     break;
                 case TouchPhase.Moved:
                     MovedEvent_PipeNode(touch);
@@ -364,6 +375,17 @@ public class MainGame : UI_Scene
     Vector2Int currentPos;
     Vector2Int targetPos;
     Vector2Int difference;
+    private void RotationEvent_PipeNode(Touch _touch)
+    {
+        Vector3 mousePos = Camera.main.ScreenToWorldPoint(_touch.position);
+        Vector2 mousePos2D = new Vector2(mousePos.x, mousePos.y);
+        RaycastHit2D nowHit = Physics2D.Raycast(mousePos2D, Vector2.zero);
+
+        if (nowHit.collider != null && nowHit.collider.TryGetComponent(out RotateNode _rotateNode))
+        {
+            _rotateNode.SetRotation_CorrectDirection();
+        }
+    }
 
     private void MovedEvent_PipeNode(Touch _touch)
     {
@@ -376,7 +398,6 @@ public class MainGame : UI_Scene
             if (nowHit.collider != null && nowHit.collider.TryGetComponent(out Node _FirstNode)
                && _FirstNode.IsClickable) // 완료된 파이프는 클릭 불가
             {
-                //nowRotateNode = null;
                 nowNode = _FirstNode;
                 clickHighLight.gameObject.SetActive(true);
                 clickHighLight.gameObject.transform.position = (Vector3)mousePos2D;
@@ -390,18 +411,13 @@ public class MainGame : UI_Scene
         clickHighLight.gameObject.transform.position = (Vector3)mousePos2D;
 
         if (nowHit.collider != null && nowHit.collider.TryGetComponent(out Node _tempNode)  // 닫아있는 콜라이더가 현재 콜라이더에서 벗어난다면
-            && (nowNode != _tempNode || nowNode.isConnecting_RotateNode))
+            && nowNode != _tempNode)
         {
-            // 대각선으로 이동을 막기 위한 논리 추가
-            currentPos = nowNode.Pos2D;
-            targetPos = _tempNode.Pos2D;
-            difference = targetPos - currentPos;
-            
             switch (nowRotateNode != null)
             {
                 case true:
                     NodeRotateUpdate(_tempNode);
-                    break;                  
+                    break;
                 case false:
                     NodeUpdate(_tempNode);
                     break;
@@ -412,40 +428,56 @@ public class MainGame : UI_Scene
             && nowNode.colorId == _rotateNode.colorId)
         {
             nowRotateNode = _rotateNode;
+            connecting_RotateNodeDic[nowNode.colorId]--;
             _rotateNode.UpdateRotateNode(nowNode);
         }
     }
 
     private void NodeRotateUpdate(Node _tempNode)
-    {        
+    {
+        if (nowRotateNode.isVec_1_Clear && nowRotateNode.isVec_2_Clear)
+        {
+            nowRotateNode = null;
+            return;
+        }
         currentPos = nowRotateNode.Pos2D;
+        targetPos = _tempNode.Pos2D;
         difference = targetPos - currentPos;
 
         // 컬러가 다른색이 끝 노드로 연결된다면
         if ((nowRotateNode.colorId != _tempNode.colorId && _tempNode.IsEndNode) || _tempNode.IsStartNode)
         {
-            Debug.Log("Another Color End Node");
+            Debug.Log("Rotate_Another Color End Node");
             return;
         }
         // 대각선이 아니라 상하좌우 이동인지 확인
         if (Mathf.Abs(difference.x) + Mathf.Abs(difference.y) != 1)
         {
-            Debug.Log("Cross Touch");
+            Debug.Log("Rotate_Cross Touch");
             return; // 대각선인 경우, 이동하지 않음
         }
 
         if (!connectingNode.Contains(_tempNode))
             connectingNode.Push(_tempNode);
 
-        // nowNode.UpdateInput(_tempNode);
         nowRotateNode.UpdateRotateNode(_tempNode, nowNode);
 
         isCheckingWining = true;
-        nowRotateNode = null;
+        //nowRotateNode = null;
         nowNode = null;
     }
+
     private void NodeUpdate(Node _tempNode)
     {
+        // 대각선으로 이동을 막기 위한 논리 추가
+        currentPos = nowNode.Pos2D;
+        targetPos = _tempNode.Pos2D;
+        difference = targetPos - currentPos;
+
+        //Debug.Log(currentPos);
+        //Debug.Log(targetPos);
+        //Debug.Log(difference);       
+
         // 컬러가 다른색이 끝 노드로 연결된다면
         if ((nowNode.colorId != _tempNode.colorId && _tempNode.IsEndNode) || _tempNode.IsStartNode)
         {
@@ -454,10 +486,16 @@ public class MainGame : UI_Scene
         }
 
         // 대각선이 아니라 상하좌우 이동인지 확인
-        if (Mathf.Abs(difference.x) + Mathf.Abs(difference.y) != 1)
+        if (Mathf.Abs(difference.x) + Mathf.Abs(difference.y) != 1 && difference != new Vector2Int(0, 0))
         {
             Debug.Log("Cross Touch");
             return; // 대각선인 경우, 이동하지 않음
+        }
+
+        // 회전파이프를 연결햇는지 안했는지
+        if (connecting_RotateNodeDic.ContainsKey(_tempNode.colorId) && connecting_RotateNodeDic[_tempNode.colorId] == 0 && _tempNode.IsEndNode)
+        {
+            return;
         }
 
         if (!connectingNode.Contains(_tempNode))
@@ -468,29 +506,40 @@ public class MainGame : UI_Scene
         nowNode = null;
     }
 
+    public void Reset_RotateNode_MainGame(Node node)
+    {
+        if (node.rotateConnectingVector != new Vector2(-1, -1) && node.connectingRotateNode != null)
+        {
+            connectingByRotate = node.connectingRotateNode;
+            connectingByRotate.Reset_RotateNode();
+            connectingByRotate = null;
+        }
+    }
+
+    RotateNode connectingByRotate = null;
     private void EndedEvent_PipeNode()
     {
-        if (connectingNode.Count != 0 && !connectingNode.Peek().IsEndNode)
+        if (connectingNode.Count != 0 && !connectingNode.Peek().GetComponent<Node>().IsEndNode)
         {
             foreach (var node in connectingNode)
             {
+                Reset_RotateNode_MainGame(node);
                 if (node.connectedNodeList.Count > 0)
                 {
                     Node tempNode = node.connectedNodeList[0];
                     // 연결된 노드를 제거
                     if (tempNode.connectedNodeList.Contains(node))
                     {
-                        node.isConnecting_RotateNode = false;
                         node.connectedNodeList.Remove(tempNode);
                         tempNode.connectedNodeList.Remove(node);
-
-                        if (node.isConnecting_RotateNode)
-                            node.RemoveEdge(tempNode, true);
-                        else
+                        if (node.connectingRotateNode == null)
                             node.RemoveEdge(tempNode);
+                        else
+                            node.RemoveEdge(tempNode, true);
                         tempNode.DeleteNode();                  // 모든 데이터들을 순회하여 삭제진행
                     }
                 }
+
                 if (node.IsStartNode)
                 {
                     node.isConnectingComplete = false;
@@ -498,6 +547,7 @@ public class MainGame : UI_Scene
                 }
             }
         }
+
         // 스택과 하이라이트 초기화
         nowRotateNode = null;
         nowNode = null;
@@ -511,6 +561,7 @@ public class MainGame : UI_Scene
 
         bool IsConnectWinning = true;
 
+        Node firstNode = nodeList[0];
         foreach (var item in nodeList)
         {
             if (item.IsEndNode && item.IsWin)
@@ -520,16 +571,21 @@ public class MainGame : UI_Scene
 
         foreach (var item in connectingNode)
         {
-            IsConnectWinning &= item.IsWin;
+            Node _item = item?.GetComponent<Node>();
+
+            if (_item == null)
+                continue;
+
+            IsConnectWinning &= _item.IsWin;
             if (!IsConnectWinning)
             {
-                item.isConnectingComplete = false;
+                _item.isConnectingComplete = false;
                 isCheckingWining = false;
                 return;
             }
             else
             {
-                item.isConnectingComplete = true;
+                _item.isConnectingComplete = true;
             }
         }
         connectingNode.Clear();

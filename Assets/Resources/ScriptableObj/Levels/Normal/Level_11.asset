@@ -15,7 +15,7 @@ MonoBehaviour:
   so_LevelName: Normal_11
   so_Edges:
   - sm_Points:
-    - {x: 1, y: 4}
+    - {x: 1, y: 0}
     - {x: 4, y: 3}
     sm_RotateEdgePoints: []
     sm_RotateEdgeisBend: 

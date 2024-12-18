@@ -16,6 +16,9 @@ public class RotateNode : BaseNode
     private Dictionary<Node, Vector2Int> connectedEdges;
 
     private MainGame mainGame;
+
+    public bool isVec_1_Clear { get; private set; }
+    public bool isVec_2_Clear { get; private set; }
     public bool isBend;
     public int currentRotation;
     public int colorId;
@@ -27,7 +30,7 @@ public class RotateNode : BaseNode
         if (isBend)
         {
             normalRotateNode.SetActive(false);
-            bendRotateNode.SetActive(true);;
+            bendRotateNode.SetActive(true); ;
             vec_1 = new Vector2Int(0, -1);      // left방향
             vec_2 = new Vector2Int(1, 0);       // down방향
             activeNode = bendRotateNode;
@@ -45,7 +48,7 @@ public class RotateNode : BaseNode
     }
 
     // 회전 시킴
-    public void RotateNodeFunc()
+    private void RotateNodeFunc()
     {
         // 90도씩 회전시킴
         currentRotation = (currentRotation + 90) % 360;
@@ -79,8 +82,9 @@ public class RotateNode : BaseNode
 
     // 이어나갈 방향을 정해주는 함수 
     // 이어나갈 방향을 추가로 지정해서 만들어줘야 함
-    public void SetCorrectDirection()
+    public void SetRotation_CorrectDirection()
     {
+        RotateNodeFunc();
         if (!isBend)
         {
             switch (currentRotation)
@@ -90,7 +94,7 @@ public class RotateNode : BaseNode
                     vec_1 = new Vector2Int(-1, 0);      // up방향
                     vec_2 = new Vector2Int(1, 0);       // down방향            
                     break;
-                case 90:
+                case 90:                    
                 case 180:
                     vec_1 = new Vector2Int(0, -1);      // left방향 
                     vec_2 = new Vector2Int(0, 1);       // right방향
@@ -104,11 +108,17 @@ public class RotateNode : BaseNode
             switch (currentRotation)
             {
                 case 270:
+                    vec_1 = new Vector2Int(0, -1);
+                    vec_2 = new Vector2Int(-1, 0);
+                    break;
                 case 0:
                     vec_1 = new Vector2Int(0, -1);      // left방향
                     vec_2 = new Vector2Int(1, 0);       // down방향            
                     break;
                 case 90:
+                    vec_1 = new Vector2Int(1, 0);
+                    vec_2 = new Vector2Int(0, 1);
+                    break;
                 case 180:
                     vec_1 = new Vector2Int(0, 1);      // right방향 
                     vec_2 = new Vector2Int(-1, 0);       // up방향
@@ -116,7 +126,7 @@ public class RotateNode : BaseNode
                 default:
                     break;
             }
-        }
+        }       
     }
 
     // 색깔과 목표지점 세팅( 꺾은 파이프를 해당 파이프 색깔 지점을 지정해줌 )
@@ -146,22 +156,32 @@ public class RotateNode : BaseNode
         Vector2Int vec2 = new Vector2Int(Mathf.Abs(connectingAble_Vec_2x), Mathf.Abs(connectingAble_Vec_2y));
 
         // 각각의 노드 위치를 나타냄 
-        Debug.Log("Pos2D: " + Pos2D);
-        Debug.Log("nowNode.Pos2D: " + nowNode.Pos2D);
-        Debug.Log("vec1: " + vec1);
-        Debug.Log("vec2: " + vec2);
+        //Debug.Log("Pos2D: " + Pos2D);
+        //Debug.Log("nowNode.Pos2D: " + nowNode.Pos2D);
+        //Debug.Log("vec1: " + vec1);
+        //Debug.Log("vec2: " + vec2);
 
         if (vec1 == nowNode.Pos2D || vec2 == nowNode.Pos2D)
         {
             if (vec1 == nowNode.Pos2D)
-                //connectingNode.vectorEdges[vec_1].SetActive(true);
-                nowNode.UpdateRotateNode(vec_1, connectingNode);
+            {   //connectingNode.vectorEdges[vec_1].SetActive(true);
+                isVec_1_Clear = true;
+                nowNode.UpdateRotateNode(this, vec_1, connectingNode);
+            }
             else if (vec2 == nowNode.Pos2D)
-                //connectingNode.vectorEdges[vec_2].SetActive(true);                           
-                nowNode.UpdateRotateNode(vec_2, connectingNode);
-
+            {   //connectingNode.vectorEdges[vec_2].SetActive(true);                           
+                isVec_2_Clear = true;
+                nowNode.UpdateRotateNode(this, vec_2, connectingNode);
+            }
             highLight.SetActive(true);
             highLight.GetComponent<Image>().color = mainGame.GetHighLightColor(colorId);
         }
+    }
+
+    public void Reset_RotateNode()
+    {
+        highLight.SetActive(false);
+        isVec_1_Clear = false;
+        isVec_2_Clear = false;
     }
 }

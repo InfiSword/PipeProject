@@ -21,6 +21,8 @@ public class Node : BaseNode
     public Vector2Int rotateConnectingVector;
     public int colorId;
 
+    public RotateNode connectingRotateNode { get; private set; }
+
     public bool IsWin       // 연결되어 있는가?
     {
         get
@@ -38,7 +40,7 @@ public class Node : BaseNode
     {
         get
         {
-            if (IsStartNode || isConnecting_RotateNode)        // 스타트 노드라면
+            if (IsStartNode || connectingRotateNode != null)        // 스타트 노드라면
             {
                 return true;
             }
@@ -60,7 +62,7 @@ public class Node : BaseNode
     // 연결이 성공된 파이프인가.
     public bool isConnectingComplete = false;
 
-    public bool isConnecting_RotateNode = false;
+    //public bool isConnecting_RotateNode = false;
 
     // 스타트 노드인가?
     public bool IsStartNode => startpoint.activeSelf;
@@ -84,6 +86,8 @@ public class Node : BaseNode
         vectorEdges = new Dictionary<Vector2Int, GameObject>();
         connectedEdges = new Dictionary<Node, GameObject>();
         connectedNodeList = new List<Node>();
+
+        rotateConnectingVector = new Vector2Int(-1, -1);
     }
 
     // 색깔에 맞는 엔드포인트를 지정
@@ -267,15 +271,17 @@ public class Node : BaseNode
         AddEdge(connectedNode);
     }
 
-    public void UpdateInput_RotateNode()
+    //public void UpdateInput_RotateNode()
+    //{
+
+    //}
+
+    public void UpdateRotateNode(RotateNode _rotate, Vector2Int vec, Node connectingNode)
     {
-
-    }
-
-    public void UpdateRotateNode(Vector2Int vec, Node connectingNode)
-    {        
+        connectingRotateNode = _rotate;
+        //Debug.Log("connectingRotate: " + connectingRotateNode.gameObject.name);
         rotateConnectingVector = vec;
-        isConnecting_RotateNode = true;
+        //isConnecting_RotateNode = true;
         AddEdge(connectingNode, rotateConnectingVector);
     }
 
@@ -309,15 +315,10 @@ public class Node : BaseNode
     {
         if (isRemoveRotate)
         {
-            isConnecting_RotateNode = false;
+            //isConnecting_RotateNode = false;
             GameObject connect = vectorEdges[rotateConnectingVector];
             connect.SetActive(false);
-            if (node.isConnecting_RotateNode)
-            {
-                connect = node.vectorEdges[node.rotateConnectingVector];
-                connect.SetActive(false);
-            }
-            else
+            if (node.connectingRotateNode == null)
             {
                 GameObject edge = connectedEdges[node];
                 edge.SetActive(false);
@@ -341,7 +342,8 @@ public class Node : BaseNode
         while (startNode != null)
         {
             startNode.isConnectingComplete = false;
-            startNode.highLight.SetActive(false);           
+            startNode.highLight.SetActive(false);
+            mainGame.Reset_RotateNode_MainGame(startNode);
 
             Node tempNode = null;
             if (startNode.connectedNodeList.Count != 0)
@@ -349,7 +351,7 @@ public class Node : BaseNode
                 tempNode = startNode.connectedNodeList[0];
                 tempNode.connectedNodeList.Remove(startNode);
 
-                if (startNode.isConnecting_RotateNode)
+                if (startNode.connectingRotateNode != null)
                     startNode.RemoveEdge(tempNode, true);
                 else
                     startNode.RemoveEdge(tempNode);
