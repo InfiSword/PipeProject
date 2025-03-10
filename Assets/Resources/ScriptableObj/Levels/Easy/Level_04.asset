@@ -17,9 +17,8 @@ MonoBehaviour:
   - sm_Points:
     - {x: 1, y: 0}
     - {x: 1, y: 3}
-    sm_RotateEdgePoints:
-    - {x: 2, y: 2}
-    sm_RotateEdgeisBend: 01
+    sm_RotateEdgePoints: []
+    sm_RotateEdgeisBend: 
   - sm_Points:
     - {x: 1, y: 1}
     - {x: 2, y: 3}
